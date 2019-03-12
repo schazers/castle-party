@@ -111,7 +111,6 @@ function love.update(dt)
     player.y_velocity = player.jump_initial_velocity
 
     -- spawn platform
-    -- TODO: decrease platform spawn rate over time
     for num = 1, platform_spawn_rate/10 do
       local shouldSpawnPlatform = (math.random() < platform_spawn_rate * dt)
       if (shouldSpawnPlatform) then
