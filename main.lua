@@ -53,7 +53,7 @@ screen_effect.godsray.exposure = 0.0
 -- carefully set domain of below three numbers 
 -- see spawnPlatformAtHeight
 local red_platform_chance = 0.08
-local blue_platform_chance = 0.18
+local blue_platform_chance = 0.00
 
 local function spawnPlatformAtHeight(height)
   newPlatform = {
@@ -103,6 +103,9 @@ end
 
 local function resetGame()
   total_time_elapsed = 0.0
+
+  red_platform_chance = 0.08
+  blue_platform_chance = 0.00
 
   screen_effect.crt.x = 1
   screen_effect.crt.y = 1
@@ -202,12 +205,13 @@ local function ensureGameIsPossible()
 end
 
 local function updateScreenDistortionBasedUponProgress()
+
   if num_platforms_cleared > 400 then
-    -- TODO: how to alter this section to make it more clear?
-    screen_effect.crt.x = -1.0
-    screen_effect.crt.y = -1.0
+    -- make player look in the corners to reason about where to go
+    screen_effect.crt.x = -3.0
+    screen_effect.crt.y = -3.0
   elseif num_platforms_cleared > 260 then
-    -- intentionally let amt go into the negative
+    -- intentionally let amt go into the negative 
     amt = 1.0 - ((num_platforms_cleared - 260) / 10)
     warp_amt = 1.0 + amt * math.sin(total_time_elapsed * (0.5 + 5.0))
     screen_effect.crt.x = warp_amt
@@ -224,10 +228,19 @@ local function updateScreenDistortionBasedUponProgress()
     amt = 1.5 - 0.5 * ((num_platforms_cleared - 100) / 10)
     screen_effect.crt.x = amt
     screen_effect.crt.y = amt
+    blue_platform_chance = 0.15
   elseif num_platforms_cleared > 0 then 
-    amt = 1.0 + 0.5 * (num_platforms_cleared / 100)
+    local pct_done_w_section = num_platforms_cleared / 100
+    amt = 1.0 + 0.5 * pct_done_w_section
     screen_effect.crt.x = amt
     screen_effect.crt.y = amt
+    -- fade music in from platforms 50-100
+    if num_platforms_cleared > 50 then
+      vol = ((num_platforms_cleared - 50.0) / 50.0) * 0.2
+      Sounds.music:setVolume(vol)
+    else
+      Sounds.music:setVolume(0.0)
+    end
   end
 end
 
@@ -247,7 +260,7 @@ function love.update(dt)
   player.y = player.y + player.y_velocity * dt
   player.y_velocity = player.y_velocity - GRAVITY * dt
 
-  if player.y > GAME_HEIGHT * 6.6 then
+  if player.y > GAME_HEIGHT * 3 then
     resetGame()
     return
   end
