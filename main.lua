@@ -437,7 +437,7 @@ function love.draw()
 
     -- score
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print(tostring(num_platforms_cleared), 16, 16, 0, 3, 3)
+    love.graphics.print("$"..tostring(num_platforms_cleared), 16, 16, 0, 3, 3)
 
     -- restore translation to state before centering window
     love.graphics.pop()
