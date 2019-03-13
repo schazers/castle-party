@@ -8,6 +8,8 @@ local GRAVITY = -1000
 local JUMP_STANDARD_LAUNCH_VEL = (GRAVITY / 1.8)
 local JUMP_SPRING_LAUNCH_VEL = GRAVITY * 1.5
 
+local MOVING_PLATFORM_SPEED = 60.0
+
 local player = {}
 local platforms = {}
 local num_platforms_cleared
@@ -30,8 +32,9 @@ local function spawnPlatformAtHeight(height)
 
   if randomType < 0.05 then
     newPlatform.type = "spring"
-  elseif randomType < 0.2 then
+  elseif randomType < 0.15 then
     newPlatform.type = "moving"
+    newPlatform.x_vel = MOVING_PLATFORM_SPEED
   else
     newPlatform.type = "default"
   end
@@ -91,9 +94,7 @@ local function ensureGameIsPossible()
 
   local biggestAllowedGap = GAME_HEIGHT / 2.8
 
-  -- check all other platform gaps
   for i, platform in ipairs(platforms) do
-
     -- spawn at top if first platform on screen 
     -- leaves too big of gap at top of screen
     if platform.y > 0 then 
@@ -102,7 +103,6 @@ local function ensureGameIsPossible()
       end
       break
     end
-
 
     -- skip last iteration
     if i < #platforms then
@@ -140,6 +140,18 @@ function love.update(dt)
   local platformPlayerHit = nil
   for i = #platforms, 1, -1 do
     local platform = platforms[i]
+
+    -- move moving platforms
+    if platform.type == "moving" then
+      if platform.x + platform.width > GAME_WIDTH then
+        platform.x = GAME_WIDTH - platform.width
+        platform.x_vel = -platform.x_vel
+      elseif platform.x < 0 then
+        platform.x = 0
+        platform.x_vel = -platform.x_vel
+      end
+      platform.x = platform.x + platform.x_vel * dt
+    end
 
     -- handle collisions with player
     if player.yPrev + player.height < platform.y and player.y + player.height > platform.y and
