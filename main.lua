@@ -3,7 +3,7 @@
 local GAME_WIDTH = 250
 local GAME_HEIGHT = 415
 
-local GRAVITY = -1200
+local GRAVITY = -1000
 
 local player = {}
 local platforms = {}
@@ -11,12 +11,12 @@ local num_platforms_cleared
 
 local PLATFORM_WIDTH = (GAME_WIDTH / 5)
 local PLATFORM_HEIGHT = (GAME_HEIGHT / 35)
-local platform_spawn_rate = 12.0
+local platform_spawn_rate = 100.0
 
 local function spawnPlatformAtHeight(height)
   local randFloat = math.random()
   platforms[#platforms + 1] = {
-    x = GAME_WIDTH * randFloat,
+    x = (GAME_WIDTH * randFloat) - (PLATFORM_WIDTH / 2.0),
     y = height,
     width = PLATFORM_WIDTH,
     height = PLATFORM_HEIGHT,
@@ -34,7 +34,7 @@ local function resetGame()
   player.y = GAME_HEIGHT / 2
   player.xPrev = player.x
   player.yPrev = player.y
-  player.y_velocity = -5
+  player.y_velocity = 0
   player.jump_initial_velocity = GRAVITY / 2
 
   -- clear all platforms
@@ -49,8 +49,12 @@ local function resetGame()
     width = PLATFORM_WIDTH,
     height = PLATFORM_HEIGHT,
   }
-  spawnPlatformAtHeight(GAME_HEIGHT * 0.5)
+  spawnPlatformAtHeight(GAME_HEIGHT * 0.65)
+  spawnPlatformAtHeight(GAME_HEIGHT * 0.53)
+  spawnPlatformAtHeight(GAME_HEIGHT * 0.6)
+  spawnPlatformAtHeight(GAME_HEIGHT * 0.4)
   spawnPlatformAtHeight(GAME_HEIGHT * 0.3)
+  spawnPlatformAtHeight(GAME_HEIGHT * 0.2)
 end
 
 function love.load()
@@ -95,15 +99,16 @@ function love.update(dt)
     -- remove platforms when they go off bottom of screen
     if (platform.y > GAME_HEIGHT) then
       num_platforms_cleared = num_platforms_cleared + 1
-      -- TRY exponential decay
-      platform_spawn_rate = platform_spawn_rate - (platform_spawn_rate / 4)
       table.remove(platforms, i)
+      -- Try exponential decay on platform spawn rate
+      platform_spawn_rate = platform_spawn_rate * 0.95
     end
 
     -- slide platforms downward as player is above threshold on screen
-    local threshold = (GAME_HEIGHT / 2.3)
-    if player.y < threshold and player.y_velocity < 0 then
-      platform.y = platform.y + (player.yPrev - player.y)
+    local camera_threshold = (GAME_HEIGHT / 2.0)
+    if player.y < camera_threshold and player.y_velocity < 0 then
+      player.y = camera_threshold - 1
+      platform.y = platform.y - player.y_velocity * dt
     end
   end
 
@@ -140,15 +145,15 @@ function love.draw()
   love.graphics.setColor(0.1, 0.1, 0.1, 1.0)
   love.graphics.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
 
-  -- player
-  love.graphics.setColor(1.0, 0.4, 0.4, 1.0)
-  love.graphics.rectangle("fill", player.x, player.y, player.width, player.height)
-
   -- platforms
   love.graphics.setColor(0.4, 1.0, 0.4, 1.0)
   for i = 1, #platforms do
     love.graphics.rectangle("fill", platforms[i].x, platforms[i].y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
   end
+
+  -- player
+  love.graphics.setColor(1.0, 0.4, 0.4, 1.0)
+  love.graphics.rectangle("fill", player.x, player.y, player.width, player.height)
 
   -- frame
   love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
