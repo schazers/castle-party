@@ -3,5 +3,6 @@ main: main.lua
 title: Capitalism
 owner: schazers
 color: AFFFAF
+coverImage: logo.png
 description: Together we can reach the stars. 
 
