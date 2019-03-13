@@ -34,13 +34,30 @@ local PLATFORM_HEIGHT = (GAME_HEIGHT / 35)
 local PLATFORM_SPAWN_RATE_DEFAULT = 1.0
 local platform_spawn_rate = PLATFORM_SPAWN_RATE_DEFAULT
 
-local screen_warp = 0.8 -- fluctuate this more over time according to 
+local screen_effect = screen_effect or moonshine(moonshine.effects.glow)
+.chain(moonshine.effects.godsray)
+.chain(moonshine.effects.pixelate)
+.chain(moonshine.effects.filmgrain)
+.chain(moonshine.effects.crt)
+
+screen_effect.pixelate.feedback = 0.0
+screen_effect.glow.strength = 5.0
+screen_effect.filmgrain.size = 5.0
+screen_effect.filmgrain.opacity = 0.5
+screen_effect.crt.x = 1.0
+screen_effect.crt.y = 1.0
+screen_effect.crt.feather = 0.1
+
+screen_effect.godsray.exposure = 0.0
+
+-- carefully set domain of below three numbers 
+-- see spawnPlatformAtHeight
+local red_platform_chance = 0.08
+local blue_platform_chance = 0.18
 
 local function spawnPlatformAtHeight(height)
-  local randFloat = math.random()
-
   newPlatform = {
-    x = (GAME_WIDTH * randFloat) - (platform_width / 2.0),
+    x = ((GAME_WIDTH - PLATFORM_WIDTH) * math.random()) + (PLATFORM_WIDTH / 2.0),
     y = height,
     width = platform_width,
     height = PLATFORM_HEIGHT,
@@ -49,9 +66,9 @@ local function spawnPlatformAtHeight(height)
 
   local randomType = math.random()
 
-  if randomType < 0.05 then
+  if randomType < red_platform_chance then
     newPlatform.type = "spring"
-  elseif randomType < 0.15 then
+  elseif randomType < blue_platform_chance then
     newPlatform.type = "moving"
     newPlatform.x_vel = MOVING_PLATFORM_SPEED
   else
@@ -67,9 +84,6 @@ local function initSounds()
 
   Sounds.springJump = Sound:new('spring_jump.mp3', 4)
   Sounds.springJump:setVolume(0.5)
-
-  Sounds.loseLife = Sound:new('lose_life.mp3', 4)
-  Sounds.loseLife:setVolume(0.5)
 
   Sounds.movingPlatform = Sound:new('moving_platform.mp3', 1)
   Sounds.movingPlatform:setVolume(0.06)
@@ -88,6 +102,11 @@ local function initSounds()
 end
 
 local function resetGame()
+  total_time_elapsed = 0.0
+
+  screen_effect.crt.x = 1
+  screen_effect.crt.y = 1
+
   Sounds.movingPlatform:stop()
   Sounds.ambience:stop()
   Sounds.ambience:play()
@@ -97,14 +116,14 @@ local function resetGame()
   platform_spawn_rate = PLATFORM_SPAWN_RATE_DEFAULT
 
   -- reset player
-  player.move_speed = 250
+  player.move_speed = 320
   player.width = GAME_WIDTH / 8
   player.height = player.width
   player.x = GAME_WIDTH / 2 - player.width / 2
-  player.y = GAME_HEIGHT / 2
+  player.y = GAME_HEIGHT - player.height - 1
   player.xPrev = player.x
   player.yPrev = player.y
-  player.y_velocity = 0
+  player.y_velocity = GRAVITY
   player.time_since_jumped = -1.0
 
   -- clear all data structures
@@ -182,6 +201,36 @@ local function ensureGameIsPossible()
   end
 end
 
+local function updateScreenDistortionBasedUponProgress()
+  if num_platforms_cleared > 400 then
+    -- TODO: how to alter this section to make it more clear?
+    screen_effect.crt.x = -1.0
+    screen_effect.crt.y = -1.0
+  elseif num_platforms_cleared > 260 then
+    -- intentionally let amt go into the negative
+    amt = 1.0 - ((num_platforms_cleared - 260) / 10)
+    warp_amt = 1.0 + amt * math.sin(total_time_elapsed * (0.5 + 5.0))
+    screen_effect.crt.x = warp_amt
+    screen_effect.crt.y = warp_amt
+  elseif num_platforms_cleared > 110 then
+    amt = ((num_platforms_cleared - 110) / 150)
+    warp_amt = 1.0 + amt * math.sin(total_time_elapsed * (0.5 + (5.0 * amt)))
+    screen_effect.crt.x = warp_amt
+    screen_effect.crt.y = warp_amt
+    if num_platforms_cleared > 200 then
+      blue_platform_chance = 0.5
+    end
+  elseif num_platforms_cleared > 100 then
+    amt = 1.5 - 0.5 * ((num_platforms_cleared - 100) / 10)
+    screen_effect.crt.x = amt
+    screen_effect.crt.y = amt
+  elseif num_platforms_cleared > 0 then 
+    amt = 1.0 + 0.5 * (num_platforms_cleared / 100)
+    screen_effect.crt.x = amt
+    screen_effect.crt.y = amt
+  end
+end
+
 function love.update(dt)
   if love.keyboard.isDown("d") or love.keyboard.isDown("right") then
     player.x = player.x + (player.move_speed * dt)
@@ -198,7 +247,7 @@ function love.update(dt)
   player.y = player.y + player.y_velocity * dt
   player.y_velocity = player.y_velocity - GRAVITY * dt
 
-  if player.y > GAME_HEIGHT then
+  if player.y > GAME_HEIGHT * 6.6 then
     resetGame()
     return
   end
@@ -304,27 +353,16 @@ function love.update(dt)
   end
 
   ensureGameIsPossible()
+  updateScreenDistortionBasedUponProgress()
 
   player.xPrev = player.x
   player.yPrev = player.y
+
+  total_time_elapsed = total_time_elapsed + dt
 end
 
-
-local effect = effect or moonshine(moonshine.effects.glow)
-.chain(moonshine.effects.pixelate)
-.chain(moonshine.effects.filmgrain)
-.chain(moonshine.effects.crt)
-
-effect.pixelate.feedback = 0.0
-effect.glow.strength = 5.0
-effect.filmgrain.size = 2.0
-effect.filmgrain.opacity = 1.0
-effect.crt.x = 0.8
-effect.crt.y = 0.8
-
-
 function love.draw()
-  effect(function()
+  screen_effect(function()
     -- center game within castle window
     love.graphics.push()
     gTranslateScreenToCenterDx = 0.5 * (love.graphics.getWidth() - GAME_WIDTH)
