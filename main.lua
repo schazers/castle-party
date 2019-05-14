@@ -376,15 +376,6 @@ end
 
 function love.draw()
   screen_effect(function()
-    -- center game within castle window
-    love.graphics.push()
-    gTranslateScreenToCenterDx = 0.5 * (love.graphics.getWidth() - GAME_WIDTH)
-    gTranslateScreenToCenterDy = 0.5 * (love.graphics.getHeight() - GAME_HEIGHT)
-    love.graphics.translate(gTranslateScreenToCenterDx, gTranslateScreenToCenterDy)
-    love.graphics.setScissor(
-        gTranslateScreenToCenterDx, gTranslateScreenToCenterDy,
-        GAME_WIDTH + 1, GAME_HEIGHT + 1)
-  
     -- bg
     love.graphics.setColor(0.20, 0.20, 0.26, 1.0)
     love.graphics.rectangle("fill", 0, 0, GAME_WIDTH, GAME_HEIGHT)
@@ -438,8 +429,5 @@ function love.draw()
     -- score
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.print("$"..tostring(num_platforms_cleared), 16, 16, 0, 3, 3)
-
-    -- restore translation to state before centering window
-    love.graphics.pop()
   end) -- end effect function
 end
