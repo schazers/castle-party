@@ -41,6 +41,7 @@ local screen_effect = screen_effect or moonshine(moonshine.effects.glow)
 .chain(moonshine.effects.crt)
 
 screen_effect.pixelate.feedback = 0.0
+screen_effect.pixelate.size = {2,2}
 screen_effect.glow.strength = 5.0
 screen_effect.filmgrain.size = 5.0
 screen_effect.filmgrain.opacity = 0.5
